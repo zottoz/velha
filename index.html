@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Velha</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        table {
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #333;
+            font-size: 2rem;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .cell:hover {
+            background-color: #ddd;
+        }
+
+        #message {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: #333;
+        }
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Fundo semi-transparente */
+            z-index: 1000; /* Garante que fique sobre outros elementos */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            display: none;
+        }
+    </style>
+
+</head>
+<body>
+    <div id="overlay"></div>
+    <div class="container">
+        <h1>Jogo da Velha</h1>
+        <table id="board">
+            <tr>
+                <td class="cell" data-index="0"></td>
+                <td class="cell" data-index="1"></td>
+                <td class="cell" data-index="2"></td>
+            </tr>
+            <tr>
+                <td class="cell" data-index="3"></td>
+                <td class="cell" data-index="4"></td>
+                <td class="cell" data-index="5"></td>
+            </tr>
+            <tr>
+                <td class="cell" data-index="6"></td>
+                <td class="cell" data-index="7"></td>
+                <td class="cell" data-index="8"></td>
+            </tr>
+        </table>
+        <p id="mensagens"></p>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+
+    
+    <script>
+    var socket = io();
+    var jogador = '';
+    const overlay = document.getElementById('overlay');
+    sessionStorage.setItem('overlayStatus', 'none');
+    localStorage.setItem('playerdef', 'none');
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const cells = document.querySelectorAll(".cell");
+        const mensagens = document.getElementById("mensagens");
+
+
+        cells.forEach(cell => {
+            cell.addEventListener("click", jogar, {once: true});
+        });
+
+        function jogar(e) {
+            const cell = e.target;
+            const index = cell.getAttribute("data-index");
+            socket.emit('jogada', {index: index, jogador: jogador});
+        }
+    });
+
+    /*
+    *   Desenha o jogo e exibe as mensagens
+    */
+    socket.on('jogada', function(msg) {
+        console.log(msg);
+        const cells = document.querySelectorAll('#board .cell');
+        cells[msg.index].textContent = localStorage.getItem('playerdef');
+        mensagens.textContent = 'Aguarde o outro jogador...';
+
+        //bloqueia a tela do jogador
+        // Checa o estado do overlay no sessionStorage
+
+
+    });
+
+    /* Defini o jogador
+    */
+    socket.on('definirJogador', function(player){
+        jogador = player;
+        sessionStorage.setItem('player', player);
+        localStorage.setItem('playerdef', player);
+    });
+
+
+    </script>
+</body>
+</html>
