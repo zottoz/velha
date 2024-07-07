@@ -62,13 +62,18 @@
             justify-content: center;
             color: white;
             font-size: 24px;
-            display: none;
+            display: flex;
         }
     </style>
 
 </head>
 <body>
-    <div id="overlay"></div>
+    <div id="overlay">
+        <div class="overlay-content">
+            <p id="overlayMessage">Aguarde o outro jogador</p>
+            <button type="button" id="reiniciar">Reiniciar o Jogo</button>
+        </div>
+    </div>
     <div class="container">
         <h1>Jogo da Velha</h1>
         <table id="board">
@@ -88,7 +93,7 @@
                 <td class="cell" data-index="8"></td>
             </tr>
         </table>
-        <p id="mensagens"></p>
+        <p id="alertas"></p>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -98,13 +103,16 @@
     var socket = io();
     var jogador = '';
     const overlay = document.getElementById('overlay');
+    const alertas = document.getElementById('alertas');
+    const reboot = document.getElementById('reiniciar');
+
     sessionStorage.setItem('overlayStatus', 'none');
-    localStorage.setItem('playerdef', 'none');
+
 
     document.addEventListener("DOMContentLoaded", () => {
         const cells = document.querySelectorAll(".cell");
-        const mensagens = document.getElementById("mensagens");
-
+        
+        alertas.textContent = "O jogo começou...";
 
         cells.forEach(cell => {
             cell.addEventListener("click", jogar, {once: true});
@@ -113,33 +121,74 @@
         function jogar(e) {
             const cell = e.target;
             const index = cell.getAttribute("data-index");
-            socket.emit('jogada', {index: index, jogador: jogador});
+            socket.emit('jogada', {
+                index: index, 
+                jogador: sessionStorage.getItem('player'),
+                mensagem: ''
+            });
+            
+            alertas.textContent = 'Jogue....';
+
+            if(sessionStorage.getItem('overlayStatus')=='none'){
+                overlay.style.display = 'flex';
+            }
+
         }
     });
 
     /*
     *   Desenha o jogo e exibe as mensagens
     */
-    socket.on('jogada', function(msg) {
-        console.log(msg);
+    socket.on('jogada', function(comando) {
+
         const cells = document.querySelectorAll('#board .cell');
-        cells[msg.index].textContent = localStorage.getItem('playerdef');
-        mensagens.textContent = 'Aguarde o outro jogador...';
+        cells[comando.index].textContent = comando.jogador;
 
-        //bloqueia a tela do jogador
-        // Checa o estado do overlay no sessionStorage
+        /**Desbloqueia a tela*/        
+        if(comando.jogador != sessionStorage.getItem("player")){
+            overlay.style.display = 'none';
+        }
 
+        if(comando.mensagem=='fim'){
+            alertas.textContent = 'fim';
+            document.getElementById("overlayMessage").textContent = 'O jogador ' + comando.jogador + ' venceu!';
+            overlay.style.display = 'flex';
+        }
+        if(comando.mensagem=='empate'){
+            alertas.textContent = 'fim';
+            document.getElementById("overlayMessage").textContent = 'O Jogo empatou';
+            overlay.style.display = 'flex';
+        }
 
     });
 
     /* Defini o jogador
     */
     socket.on('definirJogador', function(player){
+        
         jogador = player;
-        sessionStorage.setItem('player', player);
-        localStorage.setItem('playerdef', player);
+
+        if(!sessionStorage.getItem('player')){
+            sessionStorage.setItem('player', player);
+        }
+
+        /* desbloqueia a tela se for o jogador X no inicio da partida*/
+        if(jogador.toUpperCase()=='X'){
+            overlay.style.display = 'none';
+        }
+
     });
 
+    reboot.addEventListener('click', () =>{
+        // Refresh the page and bypass the cache
+        location.reload(true);
+    });
+    // Esconde o overlay ao clicar fora do conteúdo
+    /*window.addEventListener('click', (event) => {
+        if (event.target === overlay) {
+            overlay.style.display = 'none';
+        }
+    });*/
 
     </script>
 </body>

@@ -6,6 +6,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+let board = Array(9).fill(null);
+
 let Jogadores = [];
 let Jogador = '';
 let turno;
@@ -43,21 +45,68 @@ io.on('connection', (socket) => {
     */ 
     socket.on('disconnect', () => {
         Jogadores.pop();
-        console.log('Desconectouu');
+        if(Jogadores[0]=='O'){
+            Jogadores[0]=='X';
+        }
+        console.log('Desconectuu');
     });
 
     /**
      * Realiza as jogadas
      */
-
     socket.on('jogada', (comando) => {
-        console.log(comando);
+
+        board[comando.index] = comando.jogador;
+
+        if(checkWin()){
+            comando.mensagem = 'fim';
+            board.fill(null);
+            Jogadores =[];
+        }
+        else if(board.every(item => item !== null)){
+            comando.mensagem = 'empate';
+            board.fill(null);
+            Jogadores = [];
+        }
 
         io.emit('jogada', comando);
 
     });
+
 });
+
+
+// Função para verificar se há um vencedor
+function checkWin() {
+    if(board[0]!=null && board[0]==board[1] && board[1]==board[2]){
+        return true;
+    }
+    if(board[3]!=null && board[3]==board[4] && board[4]==board[5]){
+        return true;
+    }
+    if(board[6]!=null && board[6]==board[7] && board[7]==board[8]){
+        return true;
+    }
+    if(board[0]!=null && board[0]==board[3] && board[3]==board[6]){
+        return true;
+    }
+    if(board[1]!=null && board[1]==board[4] && board[4]==board[7]){
+        return true;
+    }
+    if(board[2]!=null && board[2]==board[5] && board[5]==board[8]){
+        return true;
+    }
+    if(board[0]!=null && board[0]==board[4] && board[4]==board[8]){
+        return true;
+    }
+    if(board[2]!=null && board[2]==board[4] && board[4]==board[6]){
+        return true;
+    }   
+
+    return false;
+}
 
 server.listen(3000, () => {
     console.log('listening on *:3000');
 });
+
